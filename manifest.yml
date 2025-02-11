@@ -1,0 +1,17 @@
+lzc-sdk-version: "0.1"
+name: 离线证件水印助手
+package: cloud.lazycat.app.id-watermark
+version: 0.0.1
+description: 离线证件水印助手
+homepage: https://github.com/zsxeee/watermark-helper
+author: czyt
+application:
+  subdomain: id-watermark
+  routes:
+    - /=file:///lzcapp/pkg/content
+  public_path:
+    - /
+unsupported_platforms:
+  - ios
+  - android
+  - tvos
