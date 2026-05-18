@@ -1,304 +1,944 @@
 <!DOCTYPE html>
 <html lang="zh">
-
 <head>
     <meta charset="UTF-8" />
     <title>离线证件水印助手</title>
-    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!--link rel="stylesheet" href="apple-style-bs.css"-->
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover" />
+    <meta name="theme-color" content="#0f1117" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <style>
-        /* 基础样式 */
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-            margin: auto;
-            max-width: 95vw;
-            background-color: #f8f9fa;
-            color: #343a40;
-            padding: 20px;
-            /* 增加内边距 */
+        :root {
+            --bg: #0f1117;
+            --surface: #1a1d24;
+            --surface-2: #22262f;
+            --border: #2a2e38;
+            --text: #e4e6eb;
+            --text-secondary: #8b8fa3;
+            --accent: #3b82f6;
+            --accent-glow: rgba(59, 130, 246, 0.25);
+            --danger: #ef4444;
+            --danger-glow: rgba(239, 68, 68, 0.2);
+            --success: #22c55e;
+            --radius: 14px;
+            --radius-sm: 10px;
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+            --font-mono: 'JetBrains Mono', 'SF Mono', 'Cascadia Code', monospace;
+            --font-sans: 'Noto Sans SC', -apple-system, sans-serif;
         }
 
-        /* 容器样式 */
-        .container {
-            background-color: #fff;
-            border-radius: 15px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            padding: 20px;
-        }
-
-
-        /* 图片样式 */
-        #preview-image {
-            border-radius: 10px;
-            width: 100%;
+        * {
+            margin: 0;
+            padding: 0;
             box-sizing: border-box;
-            margin-bottom: 20px;
-            /* 增加图片与表单间距 */
-            display: block;  /* 确保图片是块级元素 */
-            max-height: 50vh; /* 控制预览图片最大高度*/
-            object-fit: contain; /*保持纵横比并适应容器*/
+            -webkit-tap-highlight-color: transparent;
         }
 
-        /* 隐藏 canvas */
-        canvas {
-            width: 0;
-            height: 0;
+        body {
+            font-family: var(--font-sans);
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            min-height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 16px;
+            padding-bottom: calc(100px + var(--safe-bottom));
+            -webkit-font-smoothing: antialiased;
+            user-select: none;
+            -webkit-user-select: none;
         }
 
-        /* 表单样式 */
+        /* Ambient background texture */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse at 50% 0%, rgba(59, 130, 246, 0.06) 0%, transparent 60%),
+                radial-gradient(ellipse at 85% 100%, rgba(59, 130, 246, 0.04) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
 
-        .form-label {
+        /* Header */
+        .app-header {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 640px;
+            padding: 8px 0 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .app-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .app-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+
+        .app-title {
+            font-family: var(--font-sans);
+            font-size: 17px;
             font-weight: 600;
-            color: #495057;
-            margin-bottom: 0.25rem; /* 调整 label 与 input 间距 */
+            letter-spacing: -0.01em;
+            color: var(--text);
         }
 
-        .form-control,
-        .form-range {
-            border-radius: 8px;
-            margin-bottom: 1rem;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-            /* Subtle shadow */
+        .app-subtitle {
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-weight: 400;
+            letter-spacing: 0.02em;
         }
 
-        .form-control:focus,
-        .form-range:focus {
-            border-color: #86b7fe;
-            /* Apple-style focus color */
-            outline: 0;
-            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
-        }
-          /*滑块input 特殊*/
-        .form-range::-webkit-slider-thumb {
-            background-color: #0d6efd;  /*调整滑块颜色 */
-            border: 2px solid #fff;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.2); /* 添加阴影效果 */
-
-        }
-
-
-        /* 下载链接样式 */
-        #download-link {
-            display: inline-block;
-            background-color: #0d6efd;
-            /* Bootstrap primary color */
-            color: #fff;
-            padding: 10px 20px;
-            border-radius: 8px;
-            text-decoration: none;
-            transition: background-color 0.3s ease;
+        .btn-settings {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            color: var(--text-secondary);
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
         }
 
-        #download-link:hover {
-            background-color: #0b5ed7;
-            /* Darker shade on hover */
+        .btn-settings:active {
+            background: var(--surface-2);
+            color: var(--text);
+            transform: scale(0.95);
         }
 
-        /* 设置按钮 */
-        .setting-button{
-            margin-bottom: 1rem;
+        /* Main content */
+        .main-content {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 640px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
         }
 
-        /* 隐藏设置面板 */
-        .overlay {
+        /* Image preview area */
+        .preview-area {
+            position: relative;
+            width: 100%;
+            border-radius: var(--radius);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            overflow: hidden;
+            min-height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .preview-placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            padding: 48px 24px;
+            color: var(--text-secondary);
+            text-align: center;
+        }
+
+        .preview-placeholder-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 16px;
+            background: var(--surface-2);
+            border: 1px dashed var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+        }
+
+        .preview-placeholder p {
+            font-size: 14px;
+            line-height: 1.5;
+            max-width: 240px;
+        }
+
+        .preview-placeholder code {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            background: var(--surface-2);
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: var(--accent);
+        }
+
+        #preview-image {
+            width: 100%;
+            display: block;
+            border-radius: 0;
+            max-height: 60vh;
+            max-height: 60dvh;
+            object-fit: contain;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"><rect fill="%231a1d24" width="10" height="10" x="0" y="0"/><rect fill="%2322262f" width="10" height="10" x="10" y="0"/><rect fill="%2322262f" width="10" height="10" x="0" y="10"/><rect fill="%231a1d24" width="10" height="10" x="10" y="10"/></svg>');
+            touch-action: manipulation;
+            cursor: zoom-in;
+        }
+
+        #preview-image.zoomed {
+            max-height: none;
+            cursor: zoom-out;
+        }
+
+        /* Image zoom overlay */
+        .zoom-overlay {
             display: none;
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.8);
-            z-index: 1000;
-            justify-content: center;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 2000;
             align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
         }
 
-        .settings-panel {
-            background-color: #fff;
-            border-radius: 10px;
-            padding: 20px;
-            width: 90%;
-            max-width: 500px;
-            position: relative; /*  用于关闭按钮定位 */
-              box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* 添加阴影 */
-
+        .zoom-overlay.active {
+            display: flex;
         }
 
-        .close-button {
+        .zoom-overlay img {
+            max-width: 95vw;
+            max-height: 95vh;
+            max-height: 95dvh;
+            object-fit: contain;
+            transform-origin: center;
+            transition: transform 0.1s ease;
+        }
+
+        .zoom-close {
             position: absolute;
-            top: 10px;
-            right: 10px;
-            background: none;
+            top: 16px;
+            right: 16px;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
             border: none;
+            color: #fff;
             font-size: 24px;
-            color: #6c757d;
             cursor: pointer;
-             transition: color 0.2s ease; /* 添加颜色过渡效果 */
-        }
-          .close-button:hover {
-            color: #dc3545; /* 鼠标悬停时变为红色 */
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
-        /*响应式布局*/
+        /* File info bar */
+        .file-info {
+            display: none;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .file-info.active {
+            display: flex;
+        }
+
+        .file-info-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success);
+            flex-shrink: 0;
+        }
+
+        .file-info-name {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            color: var(--text);
+        }
+
+        /* Canvas hidden */
+        canvas {
+            display: none;
+        }
+
+        /* Bottom action bar */
+        .bottom-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            background: var(--surface);
+            border-top: 1px solid var(--border);
+            padding: 12px 16px;
+            padding-bottom: calc(12px + var(--safe-bottom));
+            display: flex;
+            gap: 10px;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+
+        .btn {
+            height: 52px;
+            border-radius: var(--radius-sm);
+            border: none;
+            font-family: var(--font-sans);
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.15s ease;
+            letter-spacing: 0.01em;
+        }
+
+        .btn:active {
+            transform: scale(0.97);
+        }
+
+        .btn-upload {
+            flex: 1;
+            background: var(--surface-2);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .btn-download {
+            flex: 1;
+            background: var(--accent);
+            color: #fff;
+            box-shadow: 0 4px 16px var(--accent-glow);
+            text-decoration: none;
+        }
+
+        .btn-download:disabled {
+            opacity: 0.4;
+            pointer-events: none;
+            box-shadow: none;
+        }
+
+        /* Bottom Sheet */
+        .sheet-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 500;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+        }
+
+        .sheet-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .bottom-sheet {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 501;
+            background: var(--surface);
+            border-top: 1px solid var(--border);
+            border-radius: 20px 20px 0 0;
+            max-height: 85vh;
+            max-height: 85dvh;
+            transform: translateY(100%);
+            transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .bottom-sheet.active {
+            transform: translateY(0);
+        }
+
+        .sheet-handle {
+            width: 36px;
+            height: 4px;
+            background: var(--border);
+            border-radius: 2px;
+            margin: 12px auto 0;
+            flex-shrink: 0;
+        }
+
+        .sheet-header {
+            padding: 14px 20px 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+
+        .sheet-title {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .sheet-close {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 1px solid var(--border);
+            background: var(--surface-2);
+            color: var(--text-secondary);
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s ease;
+        }
+
+        .sheet-close:active {
+            background: var(--danger);
+            color: #fff;
+            border-color: var(--danger);
+        }
+
+        .sheet-body {
+            flex: 1;
+            overflow-y: auto;
+            overscroll-behavior: contain;
+            padding: 0 20px 24px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .sheet-body::-webkit-scrollbar {
+            width: 0;
+        }
+
+        /* Form controls inside sheet */
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-label {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            letter-spacing: 0.02em;
+            text-transform: uppercase;
+        }
+
+        .form-label .label-value {
+            font-family: var(--font-mono);
+            font-size: 12px;
+            color: var(--accent);
+            background: var(--surface-2);
+            padding: 2px 8px;
+            border-radius: 6px;
+        }
+
+        .form-input {
+            width: 100%;
+            height: 48px;
+            padding: 0 14px;
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text);
+            font-family: var(--font-sans);
+            font-size: 15px;
+            transition: all 0.2s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        .form-input[type="color"] {
+            padding: 4px 14px;
+            cursor: pointer;
+            height: 48px;
+        }
+
+        .form-input[type="color"]::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+
+        .form-input[type="color"]::-webkit-color-swatch {
+            border-radius: 6px;
+            border: 1px solid var(--border);
+        }
+
+        /* Range slider */
+        .range-group {
+            margin-bottom: 22px;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            background: var(--surface-2);
+            outline: none;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--accent);
+            border: 3px solid var(--bg);
+            cursor: pointer;
+            box-shadow: 0 2px 8px var(--accent-glow);
+            transition: transform 0.1s ease;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:active {
+            transform: scale(1.15);
+        }
+
+        /* Desktop refinements */
         @media (min-width: 768px) {
-            .container {
-              max-width: 720px;
-               padding: 30px; /* 增加桌面端内边距 */
-
+            body {
+                padding: 24px;
+                padding-bottom: 24px;
             }
-            .settings-panel{
-                max-width: 700px;
+
+            .main-content {
+                flex-direction: column;
+            }
+
+            .preview-area {
+                min-height: 300px;
+            }
+
+            #preview-image {
+                max-height: 55vh;
+            }
+
+            .bottom-bar {
+                position: relative;
+                background: transparent;
+                border-top: none;
+                padding: 0;
+                backdrop-filter: none;
+                -webkit-backdrop-filter: none;
+            }
+
+            .btn {
+                border-radius: var(--radius-sm);
+            }
+
+            .bottom-sheet {
+                left: 50%;
+                right: auto;
+                width: 460px;
+                max-width: 90vw;
+                border-radius: 20px;
+                bottom: 50%;
+                transform: translate(-50%, 50%) scale(0.9);
+                opacity: 0;
+                transition: all 0.25s cubic-bezier(0.32, 0.72, 0, 1);
+            }
+
+            .bottom-sheet.active {
+                transform: translate(-50%, 50%) scale(1);
+                opacity: 1;
+            }
+
+            .sheet-overlay.active {
+                opacity: 1;
             }
         }
 
-       /* 打印时隐藏 */
-        @media print {
-            .setting-button, .overlay {
-                display: none !important;
+        @media (min-width: 1024px) {
+            .main-content {
+                max-width: 720px;
+            }
+
+            .preview-area {
+                min-height: 360px;
             }
         }
     </style>
 </head>
-
 <body>
-    <div class="container">
-         <button id="btnSetting" class="btn btn-outline-primary btn-sm setting-button">设置</button>
-        <img id="preview-image" style="border: 0" />
-        <input id="upload-input" type="file" accept="image/*" class="form-control mb-3" />
-
-        <!-- 设置浮层 -->
-        <div id="overlay" class="overlay">
-            <div class="settings-panel">
-                 <button class="close-button" aria-label="Close">×</button>
-                <!-- 设置选项 -->
-                <label class="form-label" for="content">水印文字：</label>
-                <input id="content" type="text" value="仅供XX实名认证使用" class="form-control" />
-
-                <label class="form-label" for="color">水印颜色：</label>
-                <input id="color" type="color" value="#ffffff" class="form-control" />
-
-                <label class="form-label" for="width">图片大小：</label>
-                <input id="width" type="number" value="2048" class="form-control" />
-
-                <label class="form-label" for="quality">图片质量：</label>
-                <input id="quality" type="range" min="1" max="100" value="80" class="form-range" />
-
-                <label class="form-label" for="alpha">不透明度：</label>
-                <input id="alpha" type="range" min="10" max="100" value="50" class="form-range" />
-
-                <label class="form-label" for="size">水印大小比：</label>
-                <input id="size" type="range" min="3" max="10" value="5" class="form-range" />
-
-                <label class="form-label" for="angle">旋转角度：</label>
-                <input id="angle" type="range" min="-180" max="180" value="45" class="form-range">
-
-                <label class="form-label" for="gap">水印间隔比：</label>
-                <input id="gap" type="range" min="20" max="300" value="150" class="form-range" />
-
-                <label class="form-label" for="font">水印字体：</label>
-                <input id="font" type="text" value="sans-serif" class="form-control" />
+    <div class="app-header">
+        <div class="app-brand">
+            <div class="app-icon">🛡</div>
+            <div>
+                <div class="app-title">证件水印助手</div>
+                <div class="app-subtitle">离线安全 · 隐私保护</div>
             </div>
+        </div>
+        <button class="btn-settings" id="btnSetting" aria-label="设置">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+        </button>
+    </div>
 
+    <div class="main-content">
+        <!-- Preview -->
+        <div class="preview-area" id="previewArea">
+            <div class="preview-placeholder" id="placeholder">
+                <div class="preview-placeholder-icon">📄</div>
+                <p>选择一张证件照片<br/>自动添加<code>安全水印</code></p>
+            </div>
+            <img id="preview-image" style="display:none" alt="预览" />
         </div>
 
-        <a id="download-link" href="javascript:alert('请先打开图片')" download>保存图片</a>
+        <!-- File info -->
+        <div class="file-info" id="fileInfo">
+            <div class="file-info-dot"></div>
+            <span class="file-info-name" id="fileName"></span>
+        </div>
     </div>
+
+    <!-- Bottom action bar -->
+    <div class="bottom-bar">
+        <button class="btn btn-upload" id="btnUpload">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            选择图片
+        </button>
+        <a class="btn btn-download" id="download-link" href="#" download disabled>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            保存图片
+        </a>
+        <input id="upload-input" type="file" accept="image/*" hidden />
+    </div>
+
+    <!-- Settings bottom sheet -->
+    <div class="sheet-overlay" id="sheetOverlay"></div>
+    <div class="bottom-sheet" id="bottomSheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-header">
+            <span class="sheet-title">水印设置</span>
+            <button class="sheet-close" id="sheetClose" aria-label="关闭">✕</button>
+        </div>
+        <div class="sheet-body">
+            <div class="form-group">
+                <label class="form-label" for="content">水印文字</label>
+                <input id="content" type="text" value="仅供XX实名认证使用" class="form-input" />
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="font">水印字体</label>
+                <input id="font" type="text" value="sans-serif" class="form-input" />
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="color">水印颜色</label>
+                <input id="color" type="color" value="#ffffff" class="form-input" />
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="width">图片大小 <span class="label-value" id="valWidth">2048</span></label>
+                <input id="width" type="number" value="2048" class="form-input" />
+            </div>
+
+            <div class="range-group">
+                <label class="form-label">图片质量 <span class="label-value" id="valQuality">80</span></label>
+                <input id="quality" type="range" min="1" max="100" value="80" />
+            </div>
+
+            <div class="range-group">
+                <label class="form-label">不透明度 <span class="label-value" id="valAlpha">50%</span></label>
+                <input id="alpha" type="range" min="10" max="100" value="50" />
+            </div>
+
+            <div class="range-group">
+                <label class="form-label">水印大小比 <span class="label-value" id="valSize">5</span></label>
+                <input id="size" type="range" min="3" max="10" value="5" />
+            </div>
+
+            <div class="range-group">
+                <label class="form-label">旋转角度 <span class="label-value" id="valAngle">45°</span></label>
+                <input id="angle" type="range" min="-180" max="180" value="45" />
+            </div>
+
+            <div class="range-group">
+                <label class="form-label">水印间隔比 <span class="label-value" id="valGap">150</span></label>
+                <input id="gap" type="range" min="20" max="300" value="150" />
+            </div>
+        </div>
+    </div>
+
+    <!-- Image zoom overlay -->
+    <div class="zoom-overlay" id="zoomOverlay">
+        <button class="zoom-close" id="zoomClose">✕</button>
+        <img id="zoomImage" src="" alt="缩放预览" />
+    </div>
+
     <canvas></canvas>
 
     <script>
-        var img = null;
+        (function() {
+            var img = null;
 
-        // 设置按钮点击事件
-        document.getElementById('btnSetting').addEventListener('click', function(){
-            document.getElementById('overlay').style.display = 'flex';
-        });
-        //关闭按钮
-        document.querySelector('.close-button').addEventListener('click', function() {
-            document.getElementById('overlay').style.display = 'none';
-        });
-        //点击浮层自身也关闭
-          document.querySelector('.overlay').addEventListener('click', function(event) {
-            // 检查点击事件是否直接发生在 .overlay 元素上（而不是其子元素）
-            if (event.target === this) {
-                document.getElementById('overlay').style.display = 'none';
+            // --- DOM refs ---
+            var $ = function(id) { return document.getElementById(id); };
+            var btnSetting = $('btnSetting');
+            var btnUpload = $('btnUpload');
+            var uploadInput = $('upload-input');
+            var downloadLink = $('download-link');
+            var previewImage = $('preview-image');
+            var placeholder = $('placeholder');
+            var previewArea = $('previewArea');
+            var fileInfo = $('fileInfo');
+            var fileName = $('fileName');
+            var sheetOverlay = $('sheetOverlay');
+            var bottomSheet = $('bottomSheet');
+            var sheetClose = $('sheetClose');
+            var zoomOverlay = $('zoomOverlay');
+            var zoomImage = $('zoomImage');
+            var zoomClose = $('zoomClose');
+
+            // Settings inputs
+            var contentInp = $('content');
+            var fontInp = $('font');
+            var colorInp = $('color');
+            var widthInp = $('width');
+            var qualityInp = $('quality');
+            var alphaInp = $('alpha');
+            var sizeInp = $('size');
+            var angleInp = $('angle');
+            var gapInp = $('gap');
+
+            // Label value displays
+            var valWidth = $('valWidth');
+            var valQuality = $('valQuality');
+            var valAlpha = $('valAlpha');
+            var valSize = $('valSize');
+            var valAngle = $('valAngle');
+            var valGap = $('valGap');
+
+            // --- Sheet open/close ---
+            function openSheet() {
+                sheetOverlay.classList.add('active');
+                bottomSheet.classList.add('active');
+                document.body.style.overflow = 'hidden';
             }
-        });
 
-        document.addEventListener('change', function(ev) {
-            if (ev.target.type === 'file') {
+            function closeSheet() {
+                sheetOverlay.classList.remove('active');
+                bottomSheet.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+
+            btnSetting.addEventListener('click', openSheet);
+            sheetClose.addEventListener('click', closeSheet);
+            sheetOverlay.addEventListener('click', function(e) {
+                if (e.target === sheetOverlay) closeSheet();
+            });
+
+            // --- Upload trigger ---
+            btnUpload.addEventListener('click', function() {
+                uploadInput.click();
+            });
+
+            // --- Image zoom ---
+            var zoomScale = 1;
+            var lastTouchDist = 0;
+
+            previewImage.addEventListener('click', function() {
+                if (!img) return;
+                zoomImage.src = previewImage.src;
+                zoomOverlay.classList.add('active');
+                zoomScale = 1;
+                zoomImage.style.transform = 'scale(1)';
+                document.body.style.overflow = 'hidden';
+            });
+
+            zoomClose.addEventListener('click', function() {
+                zoomOverlay.classList.remove('active');
+                document.body.style.overflow = '';
+            });
+
+            zoomOverlay.addEventListener('click', function(e) {
+                if (e.target === zoomOverlay) {
+                    zoomOverlay.classList.remove('active');
+                    document.body.style.overflow = '';
+                }
+            });
+
+            zoomOverlay.addEventListener('touchstart', function(e) {
+                if (e.touches.length === 2) {
+                    lastTouchDist = Math.hypot(
+                        e.touches[0].clientX - e.touches[1].clientX,
+                        e.touches[0].clientY - e.touches[1].clientY
+                    );
+                }
+            }, { passive: true });
+
+            zoomOverlay.addEventListener('touchmove', function(e) {
+                if (e.touches.length === 2) {
+                    var dist = Math.hypot(
+                        e.touches[0].clientX - e.touches[1].clientX,
+                        e.touches[0].clientY - e.touches[1].clientY
+                    );
+                    var delta = dist / lastTouchDist;
+                    zoomScale = Math.min(5, Math.max(0.5, zoomScale * delta));
+                    zoomImage.style.transform = 'scale(' + zoomScale + ')';
+                    lastTouchDist = dist;
+                }
+            }, { passive: true });
+
+            zoomOverlay.addEventListener('wheel', function(e) {
+                e.preventDefault();
+                zoomScale = Math.min(5, Math.max(0.5, zoomScale + (e.deltaY > 0 ? -0.2 : 0.2)));
+                zoomImage.style.transform = 'scale(' + zoomScale + ')';
+            }, { passive: false });
+
+            // --- File upload handler ---
+            uploadInput.addEventListener('change', function(ev) {
                 if (!ev.target.files.length) return;
                 var file = ev.target.files[0];
                 createBitmap(file, function(result) {
                     img = result;
+                    placeholder.style.display = 'none';
+                    previewImage.style.display = 'block';
+                    downloadLink.removeAttribute('disabled');
+                    fileInfo.classList.add('active');
+                    fileName.textContent = file.name;
                     repaint();
                 });
                 var newName = file.name.split('.');
                 newName.splice(-1, 0, 'watermarked');
-                document.getElementById('download-link').download = newName.join('.');
-
-            } else {
-                repaint();
-            }
-        });
-
-
-        function repaint() {
-            if (!img) return;
-            var ctx = document.getElementsByTagName('canvas')[0].getContext('2d');
-            const width = document.getElementById('width').value;
-            const height = (img.height * width) / img.width;
-            ctx.canvas.width = width;
-            ctx.canvas.height = height;
-            var maxSize = Math.max(height, width);
-            ctx.restore();
-            ctx.drawImage(img, 0, 0, width, height);
-            ctx.fillStyle = document.getElementById('color').value;
-            ctx.globalAlpha = document.getElementById('alpha').value / 100;
-            var size = (document.getElementById('size').value * maxSize) / 100;
-            ctx.font = size + 'px "' + document.getElementById('font').value + '"';
-            ctx.textBaseline = 'middle';
-            ctx.rotate(document.getElementById('angle').value * Math.PI / 180);
-            var gap = (size * document.getElementById('gap').value) / 100;
-            var content = document.getElementById('content').value;
-            if (!content.length) return;
-            var limit = Math.sqrt(2 * (maxSize * maxSize));
-            var breaker = ctx.measureText(content).width;
-            for (
-                var h = -maxSize, even = false; h <= limit; h += size + gap, even = !even
-            ) {
-                for (
-                    var v = -maxSize - (even ? breaker / 2 : 0); v <= limit + (even ? breaker / 2 : 0); v += breaker + size
-                ) {
-                    ctx.fillText(content, v, h);
-                }
-            }
-
-            const quality = document.getElementById('quality').value;
-            ctx.canvas.toBlob(
-                (e) => {
-                    const url = URL.createObjectURL(e);
-                    const a = document.getElementById('download-link');
-                    a.href = url;
-                    a.innerText = `保存图片（${Math.ceil(e.size / 1024)}kb）`;
-                    document.getElementById('preview-image').src = url;
-
-                },
-                'image/jpeg',
-                quality / 100
-            );
-        }
-
-
-        function createBitmap(blob, callback) {
-            var img = document.createElement('img');
-            img.addEventListener('load', function() {
-                callback(this);
+                downloadLink.download = newName.join('.');
             });
-            img.src = URL.createObjectURL(blob);
-        }
+
+            // --- Settings live update ---
+            var settingsInputs = [
+                contentInp, fontInp, colorInp, widthInp,
+                qualityInp, alphaInp, sizeInp, angleInp, gapInp
+            ];
+
+            settingsInputs.forEach(function(inp) {
+                inp.addEventListener('input', function() {
+                    updateLabelValues();
+                    repaint();
+                });
+                inp.addEventListener('change', function() {
+                    updateLabelValues();
+                    repaint();
+                });
+            });
+
+            function updateLabelValues() {
+                valWidth.textContent = widthInp.value;
+                valQuality.textContent = qualityInp.value;
+                valAlpha.textContent = alphaInp.value + '%';
+                valSize.textContent = sizeInp.value;
+                valAngle.textContent = angleInp.value + '°';
+                valGap.textContent = gapInp.value;
+            }
+
+            // --- Watermark rendering ---
+            function repaint() {
+                if (!img) return;
+                var canvas = document.getElementsByTagName('canvas')[0];
+                var ctx = canvas.getContext('2d');
+                var width = parseInt(widthInp.value, 10) || 2048;
+                var height = (img.height * width) / img.width;
+                canvas.width = width;
+                canvas.height = height;
+                var maxSize = Math.max(height, width);
+
+                ctx.drawImage(img, 0, 0, width, height);
+                ctx.fillStyle = colorInp.value;
+                ctx.globalAlpha = parseInt(alphaInp.value, 10) / 100;
+                var size = (parseInt(sizeInp.value, 10) * maxSize) / 100;
+                ctx.font = size + 'px "' + fontInp.value + '"';
+                ctx.textBaseline = 'middle';
+                ctx.save();
+                ctx.rotate(parseInt(angleInp.value, 10) * Math.PI / 180);
+                var gapVal = (size * parseInt(gapInp.value, 10)) / 100;
+                var contentText = contentInp.value;
+                if (!contentText.length) {
+                    ctx.restore();
+                    return;
+                }
+                var limit = Math.sqrt(2 * (maxSize * maxSize));
+                var breaker = ctx.measureText(contentText).width;
+
+                for (var h = -maxSize, even = false; h <= limit; h += size + gapVal, even = !even) {
+                    for (var v = -maxSize - (even ? breaker / 2 : 0); v <= limit + (even ? breaker / 2 : 0); v += breaker + size) {
+                        ctx.fillText(contentText, v, h);
+                    }
+                }
+                ctx.restore();
+
+                var quality = parseInt(qualityInp.value, 10);
+                canvas.toBlob(function(blob) {
+                    var url = URL.createObjectURL(blob);
+                    downloadLink.href = url;
+                    downloadLink.innerHTML =
+                        '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' +
+                        '保存图片（' + Math.ceil(blob.size / 1024) + 'kb）';
+                    previewImage.src = url;
+                }, 'image/jpeg', quality / 100);
+            }
+
+            function createBitmap(blob, callback) {
+                var el = document.createElement('img');
+                el.addEventListener('load', function() {
+                    callback(this);
+                });
+                el.src = URL.createObjectURL(blob);
+            }
+
+            // --- Keyboard shortcut ---
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    closeSheet();
+                    if (zoomOverlay.classList.contains('active')) {
+                        zoomOverlay.classList.remove('active');
+                        document.body.style.overflow = '';
+                    }
+                }
+            });
+        })();
     </script>
 </body>
-
 </html>

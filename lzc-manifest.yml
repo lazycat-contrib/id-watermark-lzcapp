@@ -1,0 +1,7 @@
+application:
+  subdomain: id-watermark
+  upstreams:
+    - location: /
+      backend: file:///lzcapp/pkg/content
+  public_path:
+    - /

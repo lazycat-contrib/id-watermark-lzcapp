@@ -1,0 +1,16 @@
+package: cloud.lazycat.app.id-watermark
+version: 0.0.2
+name: Offline ID Watermark Helper
+description: Add watermarks to ID photos offline, protecting personal information security
+min_os_version: 1.5.0
+author: czyt
+license: MIT
+homepage: https://github.com/zsxeee/watermark-helper
+
+locales:
+  zh:
+    name: 离线证件水印助手
+    description: 离线为证件照片添加水印，保护个人信息安全
+  en:
+    name: Offline ID Watermark Helper
+    description: Add watermarks to ID photos offline, protecting personal information security
